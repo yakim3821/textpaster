@@ -23,6 +23,9 @@ class ConfigManager:
             "hotkeys": {
                 "search_templates": "<ctrl>+1",
                 "cascading_menu": "<ctrl>+2"
+            },
+            "features": {
+                "auto_paste": False
             }
         }
         self.load_config()
@@ -58,6 +61,17 @@ class ConfigManager:
         if "hotkeys" not in self.config:
             self.config["hotkeys"] = {}
         self.config["hotkeys"][hotkey_name] = hotkey_value
+        self.save_config()
+
+    def get_feature(self, feature_name, default=False):
+        """Получить значение фичи из конфигурации"""
+        return self.config.get("features", {}).get(feature_name, default)
+
+    def set_feature(self, feature_name, feature_value):
+        """Установить значение фичи в конфигурации"""
+        if "features" not in self.config:
+            self.config["features"] = {}
+        self.config["features"][feature_name] = bool(feature_value)
         self.save_config()
 
 class TemplateNode:
@@ -371,7 +385,7 @@ class CascadingMenuSelector:
         self._cleanup_menu_handlers()
         
         # Вызываем callback
-        self.callback(template)
+        self.callback(template, source="cascading_menu")
 
 class TextPasterApp:
     """Основное приложение TextPaster"""
@@ -415,6 +429,12 @@ class TextPasterApp:
         settings_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Настройки", menu=settings_menu)
         settings_menu.add_command(label="Переназначить горячие клавиши", command=self.show_hotkey_settings)
+        self.auto_paste_var = tk.BooleanVar(value=self.config_manager.get_feature("auto_paste", False))
+        settings_menu.add_checkbutton(
+            label="Быстрая вставка после выбора",
+            variable=self.auto_paste_var,
+            command=self.toggle_auto_paste
+        )
         
         # Панель инструментов
         toolbar = ttk.Frame(self.main_window)
@@ -709,6 +729,34 @@ Esc - Закрыть окно поиска
         dialog = HotKeySettingsDialog(self.main_window, self.config_manager)
         if dialog.changed:
             messagebox.showinfo("Информация", "Горячие клавиши обновлены. Пожалуйста, перезагрузите приложение для применения изменений.")
+
+    def toggle_auto_paste(self):
+        """Сохранить настройку быстрой вставки"""
+        if hasattr(self, "auto_paste_var"):
+            self.config_manager.set_feature("auto_paste", self.auto_paste_var.get())
+
+    def is_auto_paste_enabled(self):
+        """Проверить, включена ли быстрая вставка"""
+        if hasattr(self, "auto_paste_var"):
+            return bool(self.auto_paste_var.get())
+        return self.config_manager.get_feature("auto_paste", False)
+
+    def _simulate_paste(self):
+        """Смоделировать Ctrl+V в активном окне"""
+        controller = keyboard.Controller()
+        try:
+            controller.press(Key.ctrl_l)
+            time.sleep(0.02)
+            controller.press(KeyCode.from_char('v'))
+            controller.release(KeyCode.from_char('v'))
+            time.sleep(0.02)
+            controller.release(Key.ctrl_l)
+        except Exception as e:
+            print(f"Ошибка быстрой вставки: {e}")
+            try:
+                controller.release(Key.ctrl_l)
+            except Exception:
+                pass
     
     def move_selected_up(self):
         """Переместить выбранный элемент вверх"""
@@ -842,12 +890,14 @@ Esc - Закрыть окно поиска
         # Используем новое окно поиска вместо старого навигационного
         self.popup_window = TemplateSearchDialog(self.template_manager, self.on_template_selected)
     
-    def on_template_selected(self, template):
+    def on_template_selected(self, template, source=None):
         """Обработка выбора шаблона во всплывающем окне"""
         if template and not template.is_folder:
             pyperclip.copy(template.content)
             # Показать уведомление в трее (опционально)
             print(f"Шаблон '{template.name}' скопирован в буфер обмена")
+            if source == "cascading_menu" and self.is_auto_paste_enabled():
+                self.main_window.after(50, self._simulate_paste)
     
     def run(self):
         """Запуск приложения"""
