@@ -1,0 +1,215 @@
+{
+  "name": "Root",
+  "content": "",
+  "is_folder": true,
+  "children": {
+    "Программирование": {
+      "name": "Программирование",
+      "content": "",
+      "is_folder": true,
+      "children": {
+        "Python": {
+          "name": "Python",
+          "content": "",
+          "is_folder": true,
+          "children": {
+            "Импорты": {
+              "name": "Импорты",
+              "content": "import os\nimport sys\nimport json\nfrom pathlib import Path\nfrom typing import List, Dict, Optional",
+              "is_folder": false,
+              "children": {}
+            },
+            "Main функция": {
+              "name": "Main функция",
+              "content": "def main():\n    \"\"\"Главная функция программы\"\"\"\n    pass\n\nif __name__ == '__main__':\n    main()",
+              "is_folder": false,
+              "children": {}
+            },
+            "Класс": {
+              "name": "Класс",
+              "content": "class MyClass:\n    \"\"\"Описание класса\"\"\"\n    \n    def __init__(self):\n        pass\n    \n    def method(self):\n        \"\"\"Описание метода\"\"\"\n        pass",
+              "is_folder": false,
+              "children": {}
+            },
+            "Обработка исключений": {
+              "name": "Обработка исключений",
+              "content": "try:\n    # Опасный код\n    pass\nexcept Exception as e:\n    print(f\"Ошибка: {e}\")\n    # Обработка ошибки\nfinally:\n    # Очистка ресурсов\n    pass",
+              "is_folder": false,
+              "children": {}
+            },
+            "Прощание 1(Остались ли вопросы?)": {
+              "name": "Прощание 1(Остались ли вопросы?)",
+              "content": "Уточни, пожалуйста, у тебя остались вопросы?",
+              "is_folder": false,
+              "children": {}
+            }
+          }
+        },
+        "JavaScript": {
+          "name": "JavaScript",
+          "content": "",
+          "is_folder": true,
+          "children": {
+            "Функция": {
+              "name": "Функция",
+              "content": "function myFunction() {\n    // Код функции\n    return result;\n}",
+              "is_folder": false,
+              "children": {}
+            },
+            "Стрелочная функция": {
+              "name": "Стрелочная функция",
+              "content": "const myFunction = (param) => {\n    // Код функции\n    return result;\n};",
+              "is_folder": false,
+              "children": {}
+            },
+            "Промисы": {
+              "name": "Промисы",
+              "content": "const fetchData = async () => {\n    try {\n        const response = await fetch(url);\n        const data = await response.json();\n        return data;\n    } catch (error) {\n        console.error('Ошибка:', error);\n    }\n};",
+              "is_folder": false,
+              "children": {}
+            }
+          }
+        }
+      }
+    },
+    "Электронная почта": {
+      "name": "Электронная почта",
+      "content": "",
+      "is_folder": true,
+      "children": {
+        "Подписи": {
+          "name": "Подписи",
+          "content": "",
+          "is_folder": true,
+          "children": {
+            "Дружественная": {
+              "name": "Дружественная",
+              "content": "Всего наилучшего!\nИван\n\nP.S. Обращайтесь, если нужна помощь!",
+              "is_folder": false,
+              "children": {}
+            },
+            "Краткая": {
+              "name": "Краткая",
+              "content": "С уважением,\nИ.И. Иванов",
+              "is_folder": false,
+              "children": {}
+            },
+            "Официальнаяяяяяяяя": {
+              "name": "Официальнаяяяяяяяя",
+              "content": "С уважением,\nИван Иванов\nДолжность\nКомпания ООО \"Название\"\nТел: +7 (123) 456-32323Добрый день!\n\nБлагодарю Вас за оперативный ответ и предоставленную информацию.\nВсе вопросы прояснились.\n\nС уважением,\nEmail: ivan@company.com",
+              "is_folder": false,
+              "children": {}
+            }
+          }
+        },
+        "Шаблоны писем": {
+          "name": "Шаблоны писем",
+          "content": "",
+          "is_folder": true,
+          "children": {
+            "Благодарность": {
+              "name": "Благодарность",
+              "content": "Добрый день!\n\nБлагодарю Вас за оперативный ответ и предоставленную информацию.\nВсе вопросы прояснились.\n\nС уважением,",
+              "is_folder": false,
+              "children": {}
+            },
+            "Запрос информации": {
+              "name": "Запрос информации",
+              "content": "Добрый день!\n\nПрошу предоставить информацию по следующему вопросу:\n\n[ВОПРОС]\n\nБуду благодарен за быстрый ответ.\n\nС уважением,",
+              "is_folder": false,
+              "children": {}
+            },
+            "Извинение": {
+              "name": "Извинение",
+              "content": "Добрый день!\n\nПриношу извинения за задержку в ответе.\nПричина задержки: [ПРИЧИНА].\n\nРассмотрю Ваш вопрос в первоочередном порядке.\n\nС уважением,",
+              "is_folder": false,
+              "children": {}
+            }
+          }
+        }
+      }
+    },
+    "Часто используемое": {
+      "name": "Часто используемое",
+      "content": "",
+      "is_folder": true,
+      "children": {
+        "Номер телефона": {
+          "name": "Номер телефона",
+          "content": "+7 (123) 456-78-90",
+          "is_folder": false,
+          "children": {}
+        },
+        "Email": {
+          "name": "Email",
+          "content": "example@email.comеукекуе",
+          "is_folder": false,
+          "children": {}
+        },
+        "Адрес": {
+          "name": "Адрес",
+          "content": "123456, г. Москва, ул. Примерная, д. 1, кв. 1",
+          "is_folder": false,
+          "children": {}
+        },
+        "Спасибо": {
+          "name": "Спасибо",
+          "content": "Спасибо большое! Очень помогли!",
+          "is_folder": false,
+          "children": {}
+        },
+        "Lorem Ipsum": {
+          "name": "Lorem Ipsum",
+          "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad ееееееееееееееееееееееееееее",
+          "is_folder": false,
+          "children": {}
+        }
+      }
+    },
+    "Чат": {
+      "name": "Чат",
+      "content": "",
+      "is_folder": true,
+      "children": {
+        "Приветствие": {
+          "name": "Приветствие",
+          "content": "",
+          "is_folder": true,
+          "children": {
+            "Привет! Уточняю информацию.": {
+              "name": "Привет! Уточняю информацию.",
+              "content": "Привет! Уточняю информацию.",
+              "is_folder": false,
+              "children": {}
+            },
+            "Привет! Уточняю информацию.(чат в работе)": {
+              "name": "Привет! Уточняю информацию.(чат в работе)",
+              "content": "Привет! Теперь я с тобой в чате. Уточняю информацию по твоему вопросу.",
+              "is_folder": false,
+              "children": {}
+            }
+          }
+        },
+        "Прощание": {
+          "name": "Прощание",
+          "content": "",
+          "is_folder": true,
+          "children": {
+            "Прощание 2(Остались ли вопросы?)": {
+              "name": "Прощание 2(Остались ли вопросы?)",
+              "content": "Рад, что проблема решена. Подскажи, пожалуйста, у тебя остались вопросы?",
+              "is_folder": false,
+              "children": {}
+            }
+          }
+        },
+        "Промежуточный": {
+          "name": "Промежуточный",
+          "content": "",
+          "is_folder": true,
+          "children": {}
+        }
+      }
+    }
+  }
+}
