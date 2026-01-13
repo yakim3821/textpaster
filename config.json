@@ -2,5 +2,8 @@
   "hotkeys": {
     "search_templates": "<alt>+1",
     "cascading_menu": "<alt>+3"
+  },
+  "features": {
+    "auto_paste": true
   }
 }
