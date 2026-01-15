@@ -9,11 +9,39 @@ from tkinter import ttk, messagebox, simpledialog
 import json
 import os
 import threading
+import ctypes
+from ctypes import wintypes
 import pyperclip
 from pynput import keyboard
 from pynput.keyboard import Key, KeyCode, Listener
 import time
 from collections import OrderedDict
+
+if os.name == "nt":
+    _user32 = ctypes.WinDLL("user32", use_last_error=True)
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _user32.GetForegroundWindow.restype = wintypes.HWND
+    _user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    _user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+    _kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+    _user32.AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
+    _user32.AttachThreadInput.restype = wintypes.BOOL
+    _user32.GetFocus.restype = wintypes.HWND
+    _user32.SendMessageW.argtypes = [
+        wintypes.HWND,
+        wintypes.UINT,
+        wintypes.WPARAM,
+        wintypes.LPARAM,
+    ]
+    if hasattr(wintypes, "LRESULT"):
+        _user32.SendMessageW.restype = wintypes.LRESULT
+    else:
+        _user32.SendMessageW.restype = ctypes.c_longlong if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c_long
+    _WM_PASTE = 0x0302
+else:
+    _user32 = None
+    _kernel32 = None
+    _WM_PASTE = None
 
 class ConfigManager:
     """Менеджер конфигурации приложения (горячие клавиши и т.д.)"""
@@ -395,6 +423,7 @@ class TextPasterApp:
         self.popup_window = None
         self.hotkey_listener = None
         self.main_window = tk.Tk()
+        self._last_foreground_hwnd = None
         self.cascading_menu = None
         self.init_main_window()
         self.cascading_menu = CascadingMenuSelector(self.template_manager, self.on_template_selected, self.main_window)
@@ -741,8 +770,57 @@ Esc - Закрыть окно поиска
             return bool(self.auto_paste_var.get())
         return self.config_manager.get_feature("auto_paste", False)
 
+    def _capture_foreground_window(self):
+        if _user32 is None:
+            self._last_foreground_hwnd = None
+            return
+        try:
+            hwnd = _user32.GetForegroundWindow()
+        except Exception:
+            hwnd = None
+        if not hwnd:
+            return
+        try:
+            own_hwnd = self.main_window.winfo_id()
+        except Exception:
+            own_hwnd = None
+        if own_hwnd and hwnd == own_hwnd:
+            return
+        self._last_foreground_hwnd = hwnd
+
+    def _get_paste_target_hwnd(self):
+        if _user32 is None:
+            return None
+        hwnd = self._last_foreground_hwnd or _user32.GetForegroundWindow()
+        if not hwnd:
+            return None
+
+        pid = wintypes.DWORD()
+        foreground_tid = _user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        current_tid = _kernel32.GetCurrentThreadId()
+        attached = False
+        if foreground_tid and current_tid and foreground_tid != current_tid:
+            attached = bool(_user32.AttachThreadInput(current_tid, foreground_tid, True))
+        try:
+            focused = _user32.GetFocus()
+        finally:
+            if attached:
+                _user32.AttachThreadInput(current_tid, foreground_tid, False)
+
+        return focused or hwnd
+
     def _simulate_paste(self):
         """Смоделировать Ctrl+V в активном окне"""
+        if _user32 is not None:
+            hwnd = self._get_paste_target_hwnd()
+            if not hwnd:
+                return
+            try:
+                _user32.SendMessageW(hwnd, _WM_PASTE, 0, 0)
+            except Exception as e:
+                print(f"?‘?ñ+óø +‘<‘?‘'‘??ü ?‘?‘'ø?óñ: {e}")
+            return
+
         controller = keyboard.Controller()
         try:
             controller.press(Key.ctrl_l)
@@ -818,6 +896,7 @@ Esc - Закрыть окно поиска
         def _on_hotkey_1_mainthread():
             """Горячая клавиша 1: показать всплывающее окно быстрого выбора"""
             try:
+                self._capture_foreground_window()
                 if self.popup_window is None:
                     self.show_popup_selector()
                 else:
@@ -833,6 +912,7 @@ Esc - Закрыть окно поиска
         def _on_hotkey_2_mainthread():
             """Горячая клавиша 2: показать каскадное меню"""
             try:
+                self._capture_foreground_window()
                 self.cascading_menu.show()
             except Exception as e:
                 print(f"Ошибка в обработчике горячей клавиши 2: {e}")

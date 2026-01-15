@@ -1,9 +1,0 @@
-{
-  "hotkeys": {
-    "search_templates": "<ctrl>+1",
-    "cascading_menu": "<alt>+3"
-  },
-  "features": {
-    "auto_paste": true
-  }
-}
