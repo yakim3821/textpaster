@@ -5,5 +5,8 @@
   },
   "features": {
     "auto_paste": true
+  },
+  "settings": {
+    "paste_method": "ctrl_v"
   }
 }

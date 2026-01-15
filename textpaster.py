@@ -54,6 +54,9 @@ class ConfigManager:
             },
             "features": {
                 "auto_paste": False
+            },
+            "settings": {
+                "paste_method": "wm_paste"
             }
         }
         self.load_config()
@@ -100,6 +103,15 @@ class ConfigManager:
         if "features" not in self.config:
             self.config["features"] = {}
         self.config["features"][feature_name] = bool(feature_value)
+        self.save_config()
+
+    def get_setting(self, setting_name, default=None):
+        return self.config.get("settings", {}).get(setting_name, default)
+
+    def set_setting(self, setting_name, setting_value):
+        if "settings" not in self.config:
+            self.config["settings"] = {}
+        self.config["settings"][setting_name] = setting_value
         self.save_config()
 
 class TemplateNode:
@@ -466,6 +478,23 @@ class TextPasterApp:
         )
         
         # Панель инструментов
+        self.paste_method_var = tk.StringVar(
+            value=self.config_manager.get_setting("paste_method", "wm_paste")
+        )
+        settings_menu.add_separator()
+        settings_menu.add_radiobutton(
+            label="Paste: WM_PASTE",
+            variable=self.paste_method_var,
+            value="wm_paste",
+            command=self.on_paste_method_change
+        )
+        settings_menu.add_radiobutton(
+            label="Paste: Ctrl+V",
+            variable=self.paste_method_var,
+            value="ctrl_v",
+            command=self.on_paste_method_change
+        )
+
         toolbar = ttk.Frame(self.main_window)
         toolbar.pack(fill=tk.X, padx=5, pady=5)
         
@@ -764,6 +793,10 @@ Esc - Закрыть окно поиска
         if hasattr(self, "auto_paste_var"):
             self.config_manager.set_feature("auto_paste", self.auto_paste_var.get())
 
+    def on_paste_method_change(self):
+        if hasattr(self, "paste_method_var"):
+            self.config_manager.set_setting("paste_method", self.paste_method_var.get())
+
     def is_auto_paste_enabled(self):
         """Проверить, включена ли быстрая вставка"""
         if hasattr(self, "auto_paste_var"):
@@ -809,18 +842,7 @@ Esc - Закрыть окно поиска
 
         return focused or hwnd
 
-    def _simulate_paste(self):
-        """Смоделировать Ctrl+V в активном окне"""
-        if _user32 is not None:
-            hwnd = self._get_paste_target_hwnd()
-            if not hwnd:
-                return
-            try:
-                _user32.SendMessageW(hwnd, _WM_PASTE, 0, 0)
-            except Exception as e:
-                print(f"?‘?ñ+óø +‘<‘?‘'‘??ü ?‘?‘'ø?óñ: {e}")
-            return
-
+    def _send_ctrl_v(self):
         controller = keyboard.Controller()
         try:
             controller.press(Key.ctrl_l)
@@ -830,12 +852,33 @@ Esc - Закрыть окно поиска
             time.sleep(0.02)
             controller.release(Key.ctrl_l)
         except Exception as e:
-            print(f"Ошибка быстрой вставки: {e}")
+            print(f"Р?С?РёР+РєР° Р+С<С?С'С?Р?Р№ Р?С?С'Р°Р?РєРё: {e}")
             try:
                 controller.release(Key.ctrl_l)
             except Exception:
                 pass
-    
+
+    def _simulate_paste(self):
+        """Simulate paste in the active window."""
+        method = self.config_manager.get_setting("paste_method", "wm_paste")
+        if hasattr(self, "paste_method_var"):
+            method = self.paste_method_var.get() or method
+        if method == "ctrl_v" or _user32 is None:
+            self._send_ctrl_v()
+            return
+        if method != "wm_paste":
+            self._send_ctrl_v()
+            return
+        if _user32 is not None:
+            hwnd = self._get_paste_target_hwnd()
+            if not hwnd:
+                return
+            try:
+                _user32.SendMessageW(hwnd, _WM_PASTE, 0, 0)
+            except Exception as e:
+                print(f"Paste error: {e}")
+            return
+
     def move_selected_up(self):
         """Переместить выбранный элемент вверх"""
         node = self.get_selected_node()
