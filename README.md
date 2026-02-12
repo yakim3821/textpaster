@@ -9,7 +9,8 @@ cd f:\textpaster
 python textpaster.py
 ```
 
-- Windows: `run_textpaster.bat`
+- Windows: `run_textpaster.bat` (запуск без консоли через `pyw/pythonw`)
+- Windows (напрямую): `textpaster.pyw`
 - Linux/macOS: `python textpaster.py`
 
 ## Ключевые возможности
@@ -153,6 +154,30 @@ python textpaster.py
 ```bash
 pip install -r requirements.txt
 ```
+
+## Сборка EXE (PyInstaller, без консоли)
+
+1. Установить PyInstaller (если еще не установлен):
+```bash
+pip install pyinstaller
+```
+2. Запустить скрипт сборки:
+```bash
+build_exe.bat
+```
+3. Готовый файл:
+- `dist/TextPaster.exe`
+
+Сборка выполняется с флагом `--windowed`, поэтому при запуске EXE консоль не открывается.
+
+Если появляется `WinError 5 (Отказано в доступе)` во время сборки, запустите терминал от администратора и повторите `build_exe.bat`.
+
+### Запуск EXE на другом ПК
+
+- Для `dist/TextPaster.exe` (сборка `--onefile`) отдельная установка Python не нужна.
+- Дополнительная установка `pyperclip`, `pynput`, `tkinter` не требуется (они упакованы в EXE).
+- Нужна Windows x64 и права записи рядом с EXE (для `config.json` и `templates.json`).
+- Для глобальных хоткеев в некоторых системах может понадобиться запуск от администратора.
 
 Дополнительно:
 - Linux: `sudo apt-get install python3-tk`

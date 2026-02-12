@@ -1,21 +1,19 @@
-@echo off
-REM TextPaster Launcher
-REM This script starts the TextPaster application
-
+﻿@echo off
+setlocal
 cd /d "%~dp0"
 
-echo ============================================
-echo   TextPaster - Template Manager
-echo ============================================
-echo.
-echo Запуск приложения...
-echo Starting application...
-echo.
-
-"C:\Program Files\Python313\python.exe" textpaster.py
-
-if errorlevel 1 (
-    echo.
-    echo Ошибка при запуске приложения / Error starting application
-    pause
+REM Prefer GUI launchers to avoid console window.
+where pyw >nul 2>&1
+if %errorlevel%==0 (
+    start "" /b pyw textpaster.pyw
+    exit /b 0
 )
+
+where pythonw >nul 2>&1
+if %errorlevel%==0 (
+    start "" /b pythonw textpaster.pyw
+    exit /b 0
+)
+
+echo [TextPaster] pyw/pythonw not found. Falling back to python (console will be visible).
+python textpaster.py

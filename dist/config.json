@@ -1,0 +1,12 @@
+{
+  "hotkeys": {
+    "search_templates": "<alt>+1",
+    "cascading_menu": "<alt>+2"
+  },
+  "features": {
+    "auto_paste": false
+  },
+  "settings": {
+    "paste_method": "ctrl_v"
+  }
+}
