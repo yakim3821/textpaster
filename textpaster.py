@@ -6,8 +6,10 @@ TextPaster - Программа для быстрого доступа к шаб
 
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
+import argparse
 import json
 import os
+import sys
 import threading
 import ctypes
 from ctypes import wintypes
@@ -16,6 +18,14 @@ from pynput import keyboard
 from pynput.keyboard import Key, KeyCode, Listener
 import time
 from collections import OrderedDict
+
+try:
+    import pystray
+    from PIL import Image, ImageDraw
+except ImportError:
+    pystray = None
+    Image = None
+    ImageDraw = None
 
 if os.name == "nt":
     _user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -429,14 +439,22 @@ class CascadingMenuSelector:
 
 class TextPasterApp:
     """Основное приложение TextPaster"""
-    def __init__(self):
+    def __init__(self, start_in_tray=False):
         self.config_manager = ConfigManager()
         self.template_manager = TemplateManager()
         self.popup_window = None
         self.hotkey_listener = None
         self.main_window = tk.Tk()
+        self.start_in_tray = bool(start_in_tray)
+        if self.start_in_tray:
+            # Hide early to avoid visible window flash on auto-start.
+            self.main_window.withdraw()
         self._last_foreground_hwnd = None
         self.cascading_menu = None
+        self.tray_icon = None
+        self.tray_thread = None
+        self._is_quitting = False
+        self._tray_supported = pystray is not None and Image is not None and ImageDraw is not None
         self.init_main_window()
         self.cascading_menu = CascadingMenuSelector(self.template_manager, self.on_template_selected, self.main_window)
         self.init_hotkeys()
@@ -456,7 +474,9 @@ class TextPasterApp:
         file_menu.add_command(label="Создать папку", command=self.create_folder)
         file_menu.add_command(label="Создать шаблон", command=self.create_template)
         file_menu.add_separator()
-        file_menu.add_command(label="Выход", command=self.main_window.quit)
+        file_menu.add_command(label="Свернуть в трей", command=self.minimize_to_tray)
+        file_menu.add_separator()
+        file_menu.add_command(label="Выход", command=self.exit_application)
         
         edit_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Правка", menu=edit_menu)
@@ -563,6 +583,7 @@ class TextPasterApp:
         self.main_window.bind('<Delete>', lambda e: self.delete_selected())
         self.main_window.bind('<Return>', lambda e: self.copy_to_clipboard())
         self.main_window.bind('<Control-f>', lambda e: search_entry.focus_set())
+        self.main_window.bind('<Unmap>', self.on_main_window_unmap)
         
         # Контекстное меню
         self.context_menu = tk.Menu(self.main_window, tearoff=0)
@@ -1021,14 +1042,92 @@ Esc - Закрыть окно поиска
             print(f"Шаблон '{template.name}' скопирован в буфер обмена")
             if source == "cascading_menu" and self.is_auto_paste_enabled():
                 self.main_window.after(50, self._simulate_paste)
+
+    def _create_tray_image(self):
+        """Create a simple in-memory tray icon."""
+        image = Image.new("RGB", (64, 64), color=(34, 96, 158))
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((10, 10, 54, 54), outline=(255, 255, 255), width=4)
+        draw.rectangle((18, 24, 46, 44), fill=(255, 255, 255))
+        return image
+
+    def _ensure_tray_icon(self):
+        if not self._tray_supported:
+            return False
+        if self.tray_icon is not None:
+            return True
+
+        def on_open(icon, item):
+            if self.main_window:
+                self.main_window.after(0, self.restore_from_tray)
+
+        def on_exit(icon, item):
+            if self.main_window:
+                self.main_window.after(0, self.exit_application)
+
+        tray_menu = pystray.Menu(
+            pystray.MenuItem("Открыть TextPaster", on_open),
+            pystray.MenuItem("Выход", on_exit),
+        )
+        self.tray_icon = pystray.Icon(
+            "textpaster",
+            self._create_tray_image(),
+            "TextPaster",
+            tray_menu,
+        )
+        self.tray_thread = threading.Thread(target=self.tray_icon.run, daemon=True)
+        self.tray_thread.start()
+        return True
+
+    def minimize_to_tray(self):
+        """Hide main window and keep app working in background."""
+        if not self._ensure_tray_icon():
+            return False
+        try:
+            self.main_window.withdraw()
+            self.status_label.config(text="Приложение свернуто в трей")
+        except Exception:
+            return False
+        return True
+
+    def restore_from_tray(self):
+        """Restore main window from tray."""
+        try:
+            self.main_window.deiconify()
+            self.main_window.lift()
+            self.main_window.focus_force()
+            self.status_label.config(text="Готов. Горячие клавиши: Ctrl+1 - поиск шаблонов | Ctrl+2 - меню")
+        except Exception:
+            pass
+
+    def on_main_window_unmap(self, event):
+        if self._is_quitting:
+            return
+        try:
+            if self.main_window.state() == "iconic":
+                self.main_window.after(0, self.minimize_to_tray)
+        except Exception:
+            pass
+
+    def exit_application(self):
+        """Terminate application process."""
+        self._is_quitting = True
+        self.on_closing()
     
     def run(self):
         """Запуск приложения"""
         self.main_window.protocol("WM_DELETE_WINDOW", self.on_closing)
+        if self.start_in_tray:
+            self.main_window.after(0, self.minimize_to_tray)
         self.main_window.mainloop()
     
     def on_closing(self):
         """Обработка закрытия приложения"""
+        if not self._is_quitting:
+            if self.minimize_to_tray():
+                return
+            self._is_quitting = True
+
         # Закрываем меню, если оно открыто
         if self.cascading_menu:
             try:
@@ -1042,6 +1141,13 @@ Esc - Закрыть окно поиска
                 self.popup_window.close()
             except:
                 pass
+
+        if self.tray_icon:
+            try:
+                self.tray_icon.stop()
+            except Exception:
+                pass
+            self.tray_icon = None
         self.main_window.destroy()
 
 class TemplateDialog:
@@ -1895,10 +2001,28 @@ class MoveToFolderDialog:
         self.dialog.destroy()
 
 
-def main():
+def parse_cli_args(argv=None):
+    """Parse command-line arguments for startup mode."""
+    parser = argparse.ArgumentParser(add_help=True)
+    parser.add_argument(
+        "--start-in-tray",
+        action="store_true",
+        help="start application hidden in system tray",
+    )
+    parser.add_argument(
+        "--start-visible",
+        action="store_true",
+        help="force visible window on startup",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
     """Главная функция"""
     try:
-        app = TextPasterApp()
+        args = parse_cli_args(argv)
+        start_in_tray = args.start_in_tray and not args.start_visible
+        app = TextPasterApp(start_in_tray=start_in_tray)
         app.run()
     except Exception as e:
         print(f"Ошибка запуска приложения: {e}")
@@ -1906,4 +2030,4 @@ def main():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
